@@ -1,0 +1,11 @@
+identity.psso.local {
+    reverse_proxy localhost:7146
+}
+
+app.psso.local {
+    reverse_proxy localhost:7022
+}
+
+api.psso.local {
+    reverse_proxy localhost:7156
+}
