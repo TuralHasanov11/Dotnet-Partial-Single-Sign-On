@@ -16,6 +16,20 @@ builder.Services.AddAuthentication("Identity.Application")
 
 builder.Services.AddAuthorization();
 
+var clientOrigins = builder.Configuration.GetSection("ClientOrigins").Get<string>();
+ArgumentNullException.ThrowIfNull(clientOrigins);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        "AllowClientApp",
+        policy => policy.WithOrigins(
+                clientOrigins.Split(','))
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials());
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -27,9 +41,14 @@ app.UseHttpsRedirection();
 
 app.MapGet("/", () => "API Service");
 
-app.MapGet("/api/protected", () =>
+app.MapGet("/api/protected", async (HttpContext httpContext) =>
 {
-    return "Secret";
+    await httpContext.Response.WriteAsJsonAsync(new { Message = "Accessed Protected" });
+}).RequireAuthorization();
+
+app.MapPost("/api/protected", async (HttpContext httpContext) =>
+{
+    await httpContext.Response.WriteAsJsonAsync(new { Message = "Posted to Protected" });
 }).RequireAuthorization();
 
 await app.RunAsync();

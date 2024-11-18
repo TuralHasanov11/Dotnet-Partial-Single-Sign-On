@@ -1,7 +1,7 @@
 import useAppFetch from '@/composables/useAppFetch';
 import type { User } from '@/types/identity';
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, type Ref } from 'vue';
 
 export const anonymousUser: User = {
   id: '',
@@ -10,7 +10,15 @@ export const anonymousUser: User = {
   roles: [],
 };
 
-export const useIdentityStore = defineStore('identity', () => {
+interface IdentityStore {
+  user: Ref<User | null>;
+  getUserInfo: () => Promise<void>;
+  register: (username: string, email: string, password: string, confirmPassword: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+export const useIdentityStore = defineStore('identity', (): IdentityStore => {
   const user = ref<User | null>(anonymousUser);
 
   async function register(username: string, email: string, password: string, confirmPassword: string): Promise<void> {
@@ -61,9 +69,10 @@ export const useIdentityStore = defineStore('identity', () => {
   }
 
   async function getUserInfo(): Promise<void> {
-    const { data } = await useAppFetch<string>('/api/identity-service/identity/user-info');
+    const { data } = await useAppFetch('/api/identity-service/identity/user-info').get().json<User>();
+
     if (data.value != null) {
-      user.value = JSON.parse(data.value) as User;
+      user.value = data.value;
     }
   }
 

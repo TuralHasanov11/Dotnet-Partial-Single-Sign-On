@@ -1,28 +1,62 @@
 <template>
   <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
-
     <div class="wrapper">
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-        <template v-if="identity.isAuthenticated.value">
-          <a href="javascript:void(0)">{{ identity.user.value.name }}</a>
-          <button @click="logout">Logout</button>
-        </template>
-        <template v-else>
-          <form @submit.prevent="login">
-            <input type="text" v-model="loginForm.email" placeholder="Email" />
-            <input type="password" v-model="loginForm.password" placeholder="Password" />
-            <button type="submit">Login</button>
+      <template v-if="isAuthenticated">
+        <a href="javascript:void(0)">{{ user?.name }}</a>
+        <div class="d-flex">
+          <button
+            class="btn btn-danger mr-2"
+            @click="
+              async () => {
+                await logout();
+              }
+            "
+          >
+            Logout
+          </button>
+          <button class="btn btn-info mx-2" @click="getProtectedData">Get Api Service's Protected Data</button>
+          <button class="btn btn-success" @click="postProtectedData">Post to Api Service's Protected Endpoint</button>
+        </div>
+      </template>
+      <template v-else>
+        <div class="row">
+          <form @submit.prevent="submitLoginForm" class="col-5">
+            <div class="form-group mb-2">
+              <label class="form-label" for="login-email">Email</label>
+              <input type="email" v-model="loginForm.email" placeholder="Email" id="login-email" class="form-control" />
+            </div>
+            <div class="form-group mb-2">
+              <label class="form-label" for="login-password">Password</label>
+              <input
+                type="password"
+                class="form-control"
+                v-model="loginForm.password"
+                placeholder="Password"
+                autocomplete="off"
+                for="login-password"
+              />
+            </div>
+            <button class="btn btn-primary" type="submit">Login</button>
           </form>
-          <form @submit.prevent="register">
-            <input type="text" v-model="registerForm.email" placeholder="Email" />
-            <input type="password" v-model="registerForm.password" placeholder="Password" />
-            <button type="submit">Register</button>
+          <form @submit.prevent="submitRegisterForm" class="col-5">
+            <div class="form-group mb-2">
+              <label class="form-label" for="register-email">Email</label>
+              <input type="text" class="form-control" v-model="registerForm.email" placeholder="Email" />
+            </div>
+            <div class="form-group mb-2">
+              <label class="form-label" for="register-password">Password</label>
+              <input
+                type="password"
+                class="form-control"
+                v-model="registerForm.password"
+                placeholder="Password"
+                autocomplete="off"
+              />
+            </div>
+            <button class="btn btn-success" type="submit">Register</button>
           </form>
-        </template>
-      </nav>
+        </div>
+      </template>
     </div>
   </header>
 
@@ -33,87 +67,29 @@
 import { RouterLink, RouterView } from 'vue-router';
 import useIdentity from '@/composables/useIdentity';
 import { ref } from 'vue';
+import useTestStore from './composables/test';
 
-const identity = useIdentity();
-
-console.log(identity.isAuthenticated);
+const { user, isAuthenticated, login, logout, register } = useIdentity();
+const testStore = useTestStore();
 
 const loginForm = ref({ email: '', password: '' });
 const registerForm = ref({ email: '', password: '' });
 
-async function login() {
-  await identity.login(loginForm.value);
+async function submitLoginForm() {
+  await login(loginForm.value);
 }
 
-async function register() {
-  await identity.register(registerForm.value);
+async function submitRegisterForm() {
+  await register(registerForm.value);
 }
 
-async function logout() {
-  await identity.logout();
+async function getProtectedData() {
+  const result = await testStore.getTest();
+  alert(result);
+}
+
+async function postProtectedData() {
+  const result = await testStore.postTest();
+  alert(result);
 }
 </script>
-
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
-</style>
