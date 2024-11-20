@@ -20,12 +20,12 @@
       </template>
       <template v-else>
         <div class="row">
-          <form @submit.prevent="submitLoginForm" class="col-5">
-            <div class="form-group mb-2">
+          <form @submit.prevent="submitLoginForm" class="col-6 mb-3">
+            <div class="form-group mb-3">
               <label class="form-label" for="login-email">Email</label>
               <input type="email" v-model="loginForm.email" placeholder="Email" id="login-email" class="form-control" />
             </div>
-            <div class="form-group mb-2">
+            <div class="form-group mb-3">
               <label class="form-label" for="login-password">Password</label>
               <input
                 type="password"
@@ -38,23 +38,7 @@
             </div>
             <button class="btn btn-primary" type="submit">Login</button>
           </form>
-          <form @submit.prevent="submitRegisterForm" class="col-5">
-            <div class="form-group mb-2">
-              <label class="form-label" for="register-email">Email</label>
-              <input type="text" class="form-control" v-model="registerForm.email" placeholder="Email" />
-            </div>
-            <div class="form-group mb-2">
-              <label class="form-label" for="register-password">Password</label>
-              <input
-                type="password"
-                class="form-control"
-                v-model="registerForm.password"
-                placeholder="Password"
-                autocomplete="off"
-              />
-            </div>
-            <button class="btn btn-success" type="submit">Register</button>
-          </form>
+          <button @click="loginWithGitHub()" class="btn btn-secondary">Login with GitHub</button>
         </div>
       </template>
     </div>
@@ -69,18 +53,13 @@ import useIdentity from '@/composables/useIdentity';
 import { ref } from 'vue';
 import useTestStore from './composables/test';
 
-const { user, isAuthenticated, login, logout, register } = useIdentity();
+const { user, isAuthenticated, login, logout, loginWithGitHub } = useIdentity();
 const testStore = useTestStore();
 
 const loginForm = ref({ email: '', password: '' });
-const registerForm = ref({ email: '', password: '' });
 
 async function submitLoginForm() {
-  await login(loginForm.value);
-}
-
-async function submitRegisterForm() {
-  await register(registerForm.value);
+  await login(loginForm.value.email, loginForm.value.password);
 }
 
 async function getProtectedData() {

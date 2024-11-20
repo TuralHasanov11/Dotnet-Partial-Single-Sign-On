@@ -16,10 +16,15 @@ interface IdentityStore {
   register: (username: string, email: string, password: string, confirmPassword: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  loginWithGitHub: (returnUrl: string) => void;
 }
 
 export const useIdentityStore = defineStore('identity', (): IdentityStore => {
   const user = ref<User | null>(anonymousUser);
+
+  function loginWithGitHub(returnUrl: string = ''): void {
+    window.location.href = `/api/identity-service/identity/login/github?returnUrl=${window.location.href + returnUrl}`;
+  }
 
   async function register(username: string, email: string, password: string, confirmPassword: string): Promise<void> {
     try {
@@ -76,5 +81,5 @@ export const useIdentityStore = defineStore('identity', (): IdentityStore => {
     }
   }
 
-  return { user, getUserInfo, register, login, logout };
+  return { user, getUserInfo, register, login, logout, loginWithGitHub };
 });

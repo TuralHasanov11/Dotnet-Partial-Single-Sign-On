@@ -12,7 +12,7 @@ builder.Services.AddDataProtection()
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
-        //options.Cookie.Name = ".Identity.SharedCookie";
+        options.Cookie.Name = ".Identity.SharedCookie";
     });
 
 builder.Services.AddAuthorization();

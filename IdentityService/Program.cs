@@ -4,16 +4,12 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
-
-//builder.Services.AddControllersWithViews();
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(@"../Keys"))
@@ -28,11 +24,11 @@ ArgumentNullException.ThrowIfNull(gitHubSettings);
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 })
     .AddCookie(options =>
     {
-        //options.Cookie.Name = ".Identity.SharedCookie";
+        options.Cookie.Name = ".Identity.SharedCookie";
         options.Events = new CookieAuthenticationEvents
         {
             OnRedirectToLogin = context =>
@@ -48,34 +44,6 @@ builder.Services.AddAuthentication(options =>
             }
         };
     })
-
-    //.AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
-    //{
-    //    options.Authority = gitHubSettings.Authority;
-    //    options.ClientId = gitHubSettings.ClientId;
-    //    options.ClientSecret = gitHubSettings.ClientSecret;
-
-    //    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-
-    //    options.ResponseType = OpenIdConnectResponseType.Code;
-
-    //    options.SaveTokens = true;
-    //    options.UsePkce = true;
-    //    options.GetClaimsFromUserInfoEndpoint = true;
-
-    //    options.CallbackPath = new PathString("/signin-oidc");
-
-    //    options.Configuration = new OpenIdConnectConfiguration
-    //    {
-    //        AuthorizationEndpoint = "https://github.com/login/oauth/authorize",
-    //        TokenEndpoint = "https://github.com/login/oauth/access_token",
-    //        UserInfoEndpoint = "https://api.github.com/user"
-    //    };
-
-    //    //options.MapInboundClaims = false;
-    //    //options.TokenValidationParameters.NameClaimType = ClaimTypes.Name;
-    //    //options.TokenValidationParameters.RoleClaimType = ClaimTypes.Role;
-    //});
     .AddOAuth(OpenIdConnectDefaults.AuthenticationScheme, options =>
     {
         options.ClientId = gitHubSettings.ClientId;
@@ -92,14 +60,18 @@ builder.Services.AddAuthentication(options =>
             using var result = await context.Backchannel.SendAsync(request, context.HttpContext.RequestAborted);
             result.EnsureSuccessStatusCode();
             var user = await result.Content.ReadFromJsonAsync<JsonElement>();
+
             context.RunClaimActions(user);
         };
 
         options.SaveTokens = false;
 
-        options.ClaimActions.MapJsonKey("sub", "id");
-        options.ClaimActions.MapJsonKey("name", "login");
-        options.ClaimActions.MapJsonKey("email", "email");
+        options.Scope.Add("read:user");
+        options.Scope.Add("user:email");
+
+        options.ClaimActions.MapJsonKey("id", "id");
+        options.ClaimActions.MapJsonKey(JwtRegisteredClaimNames.Name, "login");
+        options.ClaimActions.MapJsonKey(JwtRegisteredClaimNames.Email, "email");
     });
 
 builder.Services.AddAuthorization();
@@ -128,16 +100,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-//app.UseRouting();
-
 app.UseAuthorization();
-
-//app.MapStaticAssets();
-
-//app.MapControllerRoute(
-//    name: "default",
-//    pattern: "{controller=Home}/{action=Index}/{id?}")
-//    .WithStaticAssets();
 
 app.MapGet("/", () => "Identity Service");
 
@@ -146,10 +109,9 @@ app.MapPost("/api/identity/login", () =>
     return Results.SignIn(
         new ClaimsPrincipal(
             new ClaimsIdentity([
-                new Claim(ClaimTypes.Name, "miguel"),
-                new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Email, "miguel@test.com"),
-                new Claim(ClaimTypes.Role, "Admin")
+                new Claim(JwtRegisteredClaimNames.Name, "Dexter"),
+                new Claim("id", Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, "dexter@test.com"),
             ],
             CookieAuthenticationDefaults.AuthenticationScheme)),
             new AuthenticationProperties { IsPersistent = true });
@@ -168,33 +130,20 @@ app.MapGet("/api/identity/login/github", (string? returnUrl = "/") =>
         ]);
 });
 
-app.MapPost("/api/identity/register", () =>
-{
-    return Results.SignIn(
-        new ClaimsPrincipal(
-            new ClaimsIdentity([
-                new Claim("sub", "miguel"),
-                new Claim("name", Guid.NewGuid().ToString()),
-                new Claim("email", "miguel@test.com"),
-            ],
-            "Identity.Application")),
-            new AuthenticationProperties { IsPersistent = true });
-});
-
 app.MapPost("/api/identity/logout", () =>
 {
-    return Results.SignOut(authenticationSchemes: [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme]);
+    return Results.SignOut(
+        authenticationSchemes: [
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            OpenIdConnectDefaults.AuthenticationScheme]);
 });
 
 app.MapGet("/api/identity/user-info", (ClaimsPrincipal principal) =>
 {
     var userInfo = new UserInfoResponse(
-        principal.FindFirstValue("sub")!,
-        principal.FindFirstValue("name")!,
-        principal.FindFirstValue("email")!,
-        principal.FindAll(c => c.ValueType == ClaimTypes.Role)
-            .Select(c => c.Value)
-            .ToArray());
+        principal.FindFirstValue("id")!,
+        principal.FindFirstValue(JwtRegisteredClaimNames.Name)!,
+        principal.FindFirstValue(JwtRegisteredClaimNames.Email)!);
 
     return TypedResults.Ok(userInfo);
 }).RequireAuthorization();
