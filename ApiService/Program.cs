@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,10 +9,10 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(@"../Keys"))
     .SetApplicationName("SharedCookieApp");
 
-builder.Services.AddAuthentication("Identity.Application")
-    .AddCookie("Identity.Application", options =>
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
-        options.Cookie.Name = ".Identity.SharedCookie";
+        //options.Cookie.Name = ".Identity.SharedCookie";
     });
 
 builder.Services.AddAuthorization();
