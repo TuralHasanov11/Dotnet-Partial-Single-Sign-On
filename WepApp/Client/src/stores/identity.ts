@@ -7,7 +7,6 @@ export const anonymousUser: User = {
   id: '',
   name: '',
   email: '',
-  roles: [],
 };
 
 interface IdentityStore {

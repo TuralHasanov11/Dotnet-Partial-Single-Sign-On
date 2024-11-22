@@ -51,7 +51,7 @@
 import { RouterLink, RouterView } from 'vue-router';
 import useIdentity from '@/composables/useIdentity';
 import { ref } from 'vue';
-import useTestStore from './composables/test';
+import useTestStore from './composables/useTest';
 
 const { user, isAuthenticated, login, logout, loginWithGitHub } = useIdentity();
 const testStore = useTestStore();
